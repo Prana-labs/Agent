@@ -12,20 +12,13 @@ from LLMs import chain
 app = FastAPI()
 
 load_dotenv()
-# =========================================================
 # FASTAPI
-# =========================================================
-
 @app.post("/ask")
 async def ask_question(
     file: UploadFile = File(...),
     question: str = Form(...)
 ):
-
-    # ---------------------------------
     # Save uploaded PDF
-    # ---------------------------------
-
     with tempfile.NamedTemporaryFile(
         delete=False,
         suffix=".pdf"
@@ -37,47 +30,20 @@ async def ask_question(
 
 
     try:
-
-        # ---------------------------------
         # Build FAISS + BM25
-        # ---------------------------------
-
-        vectorstore, bm25 = setup_pipeline(
-            pdf_path
-        )
-
-
-        # ---------------------------------
+        vectorstore, bm25 = setup_pipeline(pdf_path)
         # Hybrid retrieval + reranking
-        # ---------------------------------
-
-        docs = retrieve(
-            vectorstore,
-            bm25,
-            question
-        )
-
-
-        # ---------------------------------
+        docs = retrieve(vectorstore, bm25, question)
         # Build context
-        # ---------------------------------
-
         context = "\n\n".join(
             doc.page_content
             for doc in docs
         )
-
-
-        # ---------------------------------
         # LLM
-        # ---------------------------------
-
         result = chain.invoke({
             "context": context,
             "question": question
         })
-
-
         return {
             "filename": file.filename,
             "question": question,
