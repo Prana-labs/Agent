@@ -1,6 +1,11 @@
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from dotenv import load_dotenv
 
+from langchain_core.prompts import PromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+
+from fastapi import FastAPI, UploadFile, File, Form
+
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
@@ -13,7 +18,12 @@ import os
 
 from langsmith import traceable
 
+
+app = FastAPI()
+
 load_dotenv()
+
+
 # =========================================================
 # MODELS
 # =========================================================
@@ -199,3 +209,118 @@ def retrieve(
     )
 
     return final_docs
+
+
+# =========================================================
+# LLM
+# =========================================================
+
+prompt = PromptTemplate.from_template(
+    """
+    Answer the question using the following context.
+
+    Context:
+    {context}
+
+    Question:
+    {question}
+
+    Answer:
+    """
+)
+
+model = ChatOpenAI()
+
+parser = StrOutputParser()
+
+chain = prompt | model | parser
+
+
+# =========================================================
+# FASTAPI
+# =========================================================
+
+@app.post("/ask")
+async def ask_question(
+    file: UploadFile = File(...),
+    question: str = Form(...)
+):
+
+    # ---------------------------------
+    # Save uploaded PDF
+    # ---------------------------------
+
+    with tempfile.NamedTemporaryFile(
+        delete=False,
+        suffix=".pdf"
+    ) as temp:
+
+        temp.write(await file.read())
+
+        pdf_path = temp.name
+
+
+    try:
+
+        # ---------------------------------
+        # Build FAISS + BM25
+        # ---------------------------------
+
+        vectorstore, bm25 = setup_pipeline(
+            pdf_path
+        )
+
+
+        # ---------------------------------
+        # Hybrid retrieval + reranking
+        # ---------------------------------
+
+        docs = retrieve(
+            vectorstore,
+            bm25,
+            question
+        )
+
+
+        # ---------------------------------
+        # Build context
+        # ---------------------------------
+
+        context = "\n\n".join(
+            doc.page_content
+            for doc in docs
+        )
+
+
+        # ---------------------------------
+        # LLM
+        # ---------------------------------
+
+        result = chain.invoke({
+            "context": context,
+            "question": question
+        })
+
+
+        return {
+            "filename": file.filename,
+            "question": question,
+            "answer": result
+        }
+
+
+    finally:
+
+        os.remove(pdf_path)
+
+
+# =========================================================
+# HOME
+# =========================================================
+
+@app.get("/")
+def home():
+
+    return {
+        "message": "PDF RAG API is running"
+    }
