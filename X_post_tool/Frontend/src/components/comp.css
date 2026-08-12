@@ -1,12 +1,17 @@
-/* comp.css - Premium Glassmorphic Chat Interface Styles */
+/* comp.css - Premium Glassmorphic Black-Lavender-White Chat Interface Styles */
 
 .chat-container {
   display: flex;
   width: 100vw;
   height: 100vh;
-  background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.15), transparent 40%),
-              radial-gradient(circle at bottom left, rgba(168, 85, 247, 0.15), transparent 45%),
-              #0f0f13;
+  background: linear-gradient(315deg, 
+    #0a0316 0%, 
+    #180830 30%, 
+    #3b176c 55%, 
+    #b39ddb 75%, 
+    #06030c 90%, 
+    #000000 100%
+  );
   color: #f3f4f6;
   font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   overflow: hidden;
@@ -16,8 +21,9 @@
 /* Sidebar Styling */
 .sidebar {
   width: 320px;
-  background: rgba(20, 20, 28, 0.6);
-  backdrop-filter: blur(12px);
+  background: rgba(10, 10, 15, 0.65);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border-right: 1px solid rgba(255, 255, 255, 0.08);
   display: flex;
   flex-direction: column;
@@ -36,20 +42,21 @@
 .brand-logo {
   width: 36px;
   height: 36px;
-  background: linear-gradient(135deg, #8b5cf6, #6366f1);
+  background: linear-gradient(135deg, #a78bfa, #8b5cf6);
   border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 800;
   font-size: 1.25rem;
-  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(167, 139, 250, 0.3);
 }
 
 .brand-title {
   font-size: 1.25rem;
   font-weight: 700;
-  background: linear-gradient(to right, #ffffff, #a78bfa);
+  background: linear-gradient(to right, #ffffff, #d8b4fe);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   margin: 0;
@@ -67,16 +74,16 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #9ca3af;
+  color: #a78bfa;
   margin-bottom: 0.25rem;
 }
 
 .dropzone {
-  border: 2px dashed rgba(139, 92, 246, 0.3);
+  border: 2px dashed rgba(167, 139, 250, 0.35);
   border-radius: 12px;
   padding: 2rem 1rem;
   text-align: center;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(255, 255, 255, 0.015);
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
@@ -87,25 +94,25 @@
 }
 
 .dropzone:hover, .dropzone.active {
-  border-color: #8b5cf6;
-  background: rgba(139, 92, 246, 0.06);
-  box-shadow: 0 0 20px rgba(139, 92, 246, 0.1);
+  border-color: #c084fc;
+  background: rgba(167, 139, 250, 0.06);
+  box-shadow: 0 0 20px rgba(167, 139, 250, 0.15);
 }
 
 .dropzone-icon {
   font-size: 2rem;
-  color: #a78bfa;
+  color: #c084fc;
 }
 
 .dropzone-text {
   font-size: 0.875rem;
-  color: #d1d5db;
+  color: #e5e7eb;
   line-height: 1.4;
 }
 
 .dropzone-subtext {
   font-size: 0.75rem;
-  color: #6b7280;
+  color: #9ca3af;
 }
 
 .file-input {
@@ -126,7 +133,7 @@
   font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
-  color: #a78bfa;
+  color: #c084fc;
 }
 
 .file-details {
@@ -155,7 +162,7 @@
   border: 1px solid rgba(255, 255, 255, 0.08);
   padding: 0.25rem 0.5rem;
   border-radius: 6px;
-  color: #9ca3af;
+  color: #d1d5db;
   word-break: break-all;
 }
 
@@ -184,7 +191,7 @@
 
 .sidebar-footer {
   font-size: 0.75rem;
-  color: #4b5563;
+  color: #6b7280;
   text-align: center;
   margin-top: auto;
 }
@@ -196,6 +203,9 @@
   flex-direction: column;
   height: 100%;
   position: relative;
+  background: rgba(10, 10, 16, 0.45);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 .chat-header {
@@ -205,8 +215,9 @@
   align-items: center;
   justify-content: space-between;
   padding: 0 2rem;
-  background: rgba(15, 15, 19, 0.3);
-  backdrop-filter: blur(8px);
+  background: rgba(10, 10, 15, 0.45);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   z-index: 10;
 }
 
@@ -232,7 +243,7 @@
 
 .status-text {
   font-weight: 600;
-  color: #d1d5db;
+  color: #e5e7eb;
 }
 
 /* Message Log */
@@ -255,12 +266,12 @@
 }
 
 .messages-log::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.06);
   border-radius: 10px;
 }
 
 .messages-log::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.12);
 }
 
 .welcome-screen {
@@ -276,8 +287,8 @@
 
 .welcome-icon {
   font-size: 3rem;
-  color: #a78bfa;
-  background: rgba(139, 92, 246, 0.1);
+  color: #c084fc;
+  background: rgba(167, 139, 250, 0.1);
   padding: 1.5rem;
   border-radius: 20px;
   margin-bottom: 0.5rem;
@@ -348,13 +359,15 @@
   background: linear-gradient(135deg, #6366f1, #4f46e5);
   color: #ffffff;
   border-top-right-radius: 2px;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
 }
 
 .message-bubble.ai .message-content {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  color: #e5e7eb;
+  background: rgba(20, 20, 30, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #f3f4f6;
   border-top-left-radius: 2px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
 }
 
 /* Typing Indicator */
@@ -363,10 +376,11 @@
   align-items: center;
   gap: 0.3rem;
   padding: 0.875rem 1.25rem;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(20, 20, 30, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 14px;
   border-top-left-radius: 2px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
 }
 
 .typing-dot {
@@ -383,7 +397,7 @@
 /* Input Panel */
 .input-panel {
   padding: 1.5rem 2rem 2rem;
-  background: linear-gradient(to top, #0f0f13 80%, transparent);
+  background: linear-gradient(to top, #020205 80%, transparent);
   border-top: 1px solid rgba(255, 255, 255, 0.05);
   z-index: 10;
 }
@@ -396,7 +410,7 @@
 
 .chat-input {
   width: 100%;
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(255, 255, 255, 0.02);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 16px;
   padding: 1.125rem 4rem 1.125rem 1.25rem;
@@ -408,9 +422,14 @@
   font-family: inherit;
 }
 
+.chat-input::placeholder {
+  color: #9ca3af;
+  opacity: 0.4;
+}
+
 .chat-input:focus {
   border-color: #8b5cf6;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.04);
   box-shadow: 0 0 25px rgba(139, 92, 246, 0.1);
 }
 

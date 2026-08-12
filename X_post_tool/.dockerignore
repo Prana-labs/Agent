@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# Environment
+.env
+*.env.local
+
+# Node
+Frontend/node_modules/
+Frontend/dist/
+Frontend/dist-ssr/
+
+# Misc
+.DS_Store
+.git/
+.gitignore
+*.suo
+*.log
+
+# Qdrant data
+qdrant_data/

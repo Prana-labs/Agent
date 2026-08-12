@@ -8,9 +8,6 @@ import tempfile
 import os
 
 load_dotenv()
-# =========================================================
-# LLM
-# =========================================================
 
 prompt = PromptTemplate.from_template(
     """

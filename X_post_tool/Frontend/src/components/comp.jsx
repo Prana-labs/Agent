@@ -97,7 +97,7 @@ export default function PdfChat() {
     try {
       const result = await chatWithPdf({
         file: file,
-        question: "Please briefly summarize this document and tell me what you can help with.",
+        question: "",
         threadId: null
       });
 

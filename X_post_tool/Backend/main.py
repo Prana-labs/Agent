@@ -1,10 +1,12 @@
+import os
+os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+
 from langchain_openai import ChatOpenAI
 from dotenv import load_dotenv
 
 from fastapi import FastAPI, UploadFile, File, Form
 
 import tempfile
-import os
 
 from rag import setup_pipeline
 from state import create_session, chat
@@ -74,10 +76,6 @@ async def chat_endpoint(
         "answer": answer
     }
 
-
-# =========================================================
-# HOME
-# =========================================================
 
 @app.get("/")
 def home():

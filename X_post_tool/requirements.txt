@@ -1,0 +1,28 @@
+# API & Server
+fastapi>=0.115.12
+uvicorn>=0.34.0
+python-multipart>=0.0.32
+python-dotenv>=1.2.2
+
+# LangChain Framework
+langchain>=0.3.0
+langchain-core>=0.3.0
+langchain-community>=0.3.0
+langchain-openai>=0.3.0
+langchain-text-splitters>=0.3.0
+
+# LangGraph Orchestration
+langgraph>=0.2.0
+langgraph-checkpoint>=1.0.0
+
+# RAG & Document Processing
+faiss-cpu>=1.7.4
+rank-bm25>=0.2.2
+pypdf>=5.0.0
+
+# LLM Client & Helpers
+openai>=1.0.0
+tiktoken>=0.7.0
+
+# Observability & Tracing
+langsmith>=0.1.0
