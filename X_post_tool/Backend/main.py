@@ -1,7 +1,6 @@
 import os
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
-from langchain_openai import ChatOpenAI
 from dotenv import load_dotenv
 
 from fastapi import FastAPI, UploadFile, File, Form
@@ -9,7 +8,7 @@ from fastapi import FastAPI, UploadFile, File, Form
 import tempfile
 
 from rag import setup_pipeline
-from state import create_session, chat
+from state import chat, create_session, sessions
 
 from fastapi import HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -26,15 +25,13 @@ app.add_middleware(
 
 load_dotenv()
 
-# FASTAPI
 @app.post("/chat")
 async def chat_endpoint(
     question: str = Form(None),
     thread_id: str = Form(None),
-    file: UploadFile = File(None)
+    file: UploadFile = File(None),
 ):
     if file:
-        # Save uploaded PDF
         with tempfile.NamedTemporaryFile(
             delete=False,
             suffix=".pdf"
@@ -43,10 +40,23 @@ async def chat_endpoint(
             pdf_path = temp.name
 
         try:
-            # Build FAISS + BM25
-            vectorstore, bm25 = setup_pipeline(pdf_path)
-            # Create session
-            thread_id = create_session(vectorstore, bm25, file.filename)
+            pipeline = setup_pipeline(pdf_path)
+            filename = file.filename or "document"
+
+            if thread_id:
+                sessions[thread_id] = {
+                    "pipeline": pipeline,
+                    "filename": filename,
+                }
+                tid = thread_id
+            else:
+                tid = create_session(pipeline, filename)
+
+            return {
+                "thread_id": tid,
+                "question": None,
+                "answer": f"I have successfully loaded and indexed '{filename}'. Ask me anything about its contents!",
+            }
         finally:
             if os.path.exists(pdf_path):
                 os.remove(pdf_path)
@@ -56,13 +66,11 @@ async def chat_endpoint(
             detail="Either thread_id or file must be provided to start a chat session."
         )
 
-    # If initializing session without a question, return successfully without invoking graph
     if not question:
-        filename = file.filename if file else "document"
         return {
             "thread_id": thread_id,
             "question": None,
-            "answer": f"I have successfully loaded and indexed '{filename}'. Ask me anything about its contents!"
+            "answer": "Session ready. Ask me anything about the document contents!",
         }
 
     try:

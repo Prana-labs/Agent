@@ -26,6 +26,8 @@ share/python-wheels/
 *.egg
 MANIFEST
 Dockerfile
+nemotron3.py
+.vscode
 
 # PyInstaller
 #   Usually these files are written by a python script from a template

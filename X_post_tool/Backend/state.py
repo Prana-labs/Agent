@@ -7,7 +7,7 @@ from langgraph.checkpoint.memory import InMemorySaver
 from langchain_core.messages import SystemMessage, HumanMessage
 from langchain_core.runnables import RunnableConfig
 
-from rag import retrieve
+from rag import RAGPipeline
 from LLMs import model
 
 sessions = {}
@@ -21,11 +21,10 @@ def rag_node(
     Main LangGraph node.
 
     1. Gets the current question
-    2. Retrieves relevant PDF chunks
-    3. Reranks them
-    4. Combines PDF context + conversation history
-    5. Sends everything to the LLM
-    6. Returns the AI response
+    2. Runs hybrid retrieval (dense + sparse + RRF)
+    3. Combines PDF context + conversation history
+    4. Sends everything to the LLM
+    5. Returns the AI response
     """
     thread_id = config["configurable"]["thread_id"]
 
@@ -35,22 +34,10 @@ def rag_node(
         )
 
     session = sessions[thread_id]
-
-    vectorstore = session["vectorstore"]
-    bm25 = session["bm25"]
+    pipeline: RAGPipeline = session["pipeline"]
 
     question = state["messages"][-1].content
-
-    docs = retrieve(
-        vectorstore,
-        bm25,
-        question
-    )
-
-    context = "\n\n".join(
-        doc.page_content
-        for doc in docs
-    )
+    context = pipeline.get_context(question)
 
     system_message = SystemMessage(
         content=f"""
@@ -90,8 +77,8 @@ DOCUMENT CONTEXT:
         "messages": [response]
     }
 
-]
-# BUILD LANGGRAPH]
+
+# BUILD LANGGRAPH
 
 builder = StateGraph(MessagesState)
 
@@ -120,8 +107,7 @@ graph = builder.compile(
 # =========================================================
 
 def create_session(
-    vectorstore,
-    bm25,
+    pipeline: RAGPipeline,
     filename
 ):
     """
@@ -134,8 +120,7 @@ def create_session(
     thread_id = str(uuid.uuid4())
 
     sessions[thread_id] = {
-        "vectorstore": vectorstore,
-        "bm25": bm25,
+        "pipeline": pipeline,
         "filename": filename
     }
 
