@@ -28,6 +28,8 @@ MANIFEST
 Dockerfile
 nemotron3.py
 .vscode
+.editorconfig
+
 
 # PyInstaller
 #   Usually these files are written by a python script from a template
