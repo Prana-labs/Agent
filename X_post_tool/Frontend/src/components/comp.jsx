@@ -2,11 +2,77 @@ import React, { useState, useRef, useEffect } from 'react';
 import { chatWithPdf } from '../services/api';
 import './comp.css';
 
+function formatInlineText(text) {
+  if (!text) return '';
+  const parts = text.split(/(\*\*.*?\*\*)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return <strong key={i} className="highlight-text">{part.slice(2, -2)}</strong>;
+    }
+    return part;
+  });
+}
+
+function RenderMessageContent({ content, isAi }) {
+  if (!content) return null;
+  if (!isAi) {
+    return <div className="user-message-text">{content}</div>;
+  }
+
+  const lines = content.split('\n');
+  const elements = [];
+  let currentList = [];
+  let listKey = 0;
+
+  const flushList = () => {
+    if (currentList.length > 0) {
+      elements.push(
+        <ul key={`ul-${listKey++}`} className="chat-bullet-list">
+          {currentList.map((item, idx) => (
+            <li key={idx}>{formatInlineText(item)}</li>
+          ))}
+        </ul>
+      );
+      currentList = [];
+    }
+  };
+
+  lines.forEach((line, index) => {
+    const trimmed = line.trim();
+
+    if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+      currentList.push(trimmed.substring(2));
+    } else {
+      flushList();
+      if (trimmed.startsWith('# ')) {
+        elements.push(<h2 key={index} className="chat-h1">{formatInlineText(trimmed.substring(2))}</h2>);
+      } else if (trimmed.startsWith('## ')) {
+        elements.push(<h3 key={index} className="chat-h2">{formatInlineText(trimmed.substring(3))}</h3>);
+      } else if (trimmed.startsWith('### ')) {
+        elements.push(<h4 key={index} className="chat-h3">{formatInlineText(trimmed.substring(4))}</h4>);
+      } else if (trimmed.startsWith('> ')) {
+        elements.push(
+          <blockquote key={index} className="chat-quote">
+            {formatInlineText(trimmed.substring(2))}
+          </blockquote>
+        );
+      } else if (trimmed === '') {
+        // empty space between sections
+      } else {
+        elements.push(<p key={index} className="chat-p">{formatInlineText(line)}</p>);
+      }
+    }
+  });
+
+  flushList();
+  return <div className="formatted-markdown">{elements}</div>;
+}
+
 export default function PdfChat() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
-  const [file, setFile] = useState(null);
-  const [fileName, setFileName] = useState('');
+  const [files, setFiles] = useState([]);
+  const [activeFileNames, setActiveFileNames] = useState([]);
   const [threadId, setThreadId] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -18,30 +84,38 @@ export default function PdfChat() {
   // Restore session from localStorage if present
   useEffect(() => {
     const savedThreadId = localStorage.getItem('pdf_chat_thread_id');
-    const savedFileName = localStorage.getItem('pdf_chat_file_name');
+    const savedFileNames = localStorage.getItem('pdf_chat_file_names');
     const savedMessages = localStorage.getItem('pdf_chat_messages');
     
-    if (savedThreadId && savedFileName) {
+    if (savedThreadId && savedFileNames) {
       setThreadId(savedThreadId);
-      setFileName(savedFileName);
+      try {
+        setActiveFileNames(JSON.parse(savedFileNames));
+      } catch {
+        setActiveFileNames([savedFileNames]);
+      }
       if (savedMessages) {
-        setMessages(JSON.parse(savedMessages));
+        try {
+          setMessages(JSON.parse(savedMessages));
+        } catch {
+          setMessages([]);
+        }
       }
     }
   }, []);
 
   // Sync messages and session info to localStorage
   useEffect(() => {
-    if (threadId && fileName) {
+    if (threadId && activeFileNames.length > 0) {
       localStorage.setItem('pdf_chat_thread_id', threadId);
-      localStorage.setItem('pdf_chat_file_name', fileName);
+      localStorage.setItem('pdf_chat_file_names', JSON.stringify(activeFileNames));
       localStorage.setItem('pdf_chat_messages', JSON.stringify(messages));
     } else {
       localStorage.removeItem('pdf_chat_thread_id');
-      localStorage.removeItem('pdf_chat_file_name');
+      localStorage.removeItem('pdf_chat_file_names');
       localStorage.removeItem('pdf_chat_messages');
     }
-  }, [messages, threadId, fileName]);
+  }, [messages, threadId, activeFileNames]);
 
   // Auto scroll to bottom on new messages
   useEffect(() => {
@@ -58,45 +132,55 @@ export default function PdfChat() {
     }
   };
 
+  const addPdfFiles = (incomingFiles) => {
+    const validPdfs = incomingFiles.filter(
+      (f) => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf')
+    );
+    if (validPdfs.length === 0) {
+      setError('Please select or drop valid PDF files.');
+      return;
+    }
+    setError(null);
+    setFiles((prev) => {
+      // Avoid duplicate filenames
+      const existingNames = new Set(prev.map((f) => f.name));
+      const filtered = validPdfs.filter((f) => !existingNames.has(f.name));
+      return [...prev, ...filtered];
+    });
+  };
+
   const handleDrop = (e) => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
     
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      const droppedFile = e.dataTransfer.files[0];
-      if (droppedFile.type === 'application/pdf') {
-        setFile(droppedFile);
-        setFileName(droppedFile.name);
-        setError(null);
-      } else {
-        setError('Please select a valid PDF file.');
-      }
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      addPdfFiles(Array.from(e.dataTransfer.files));
     }
   };
 
   const handleFileChange = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      const selectedFile = e.target.files[0];
-      if (selectedFile.type === 'application/pdf') {
-        setFile(selectedFile);
-        setFileName(selectedFile.name);
-        setError(null);
-      } else {
-        setError('Please select a valid PDF file.');
+    if (e.target.files && e.target.files.length > 0) {
+      addPdfFiles(Array.from(e.target.files));
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
       }
     }
   };
 
+  const handleRemoveFile = (indexToRemove) => {
+    setFiles((prev) => prev.filter((_, idx) => idx !== indexToRemove));
+  };
+
   const handleLoadPdf = async (e) => {
-    e.stopPropagation();
-    if (!file) return;
+    if (e) e.stopPropagation();
+    if (files.length === 0) return;
     setLoading(true);
     setError(null);
 
     try {
       const result = await chatWithPdf({
-        file: file,
+        files: files,
         question: "",
         threadId: null
       });
@@ -105,19 +189,23 @@ export default function PdfChat() {
         setThreadId(result.thread_id);
       }
 
+      const uploadedNames = result.filenames || files.map((f) => f.name);
+      setActiveFileNames(uploadedNames);
+      setFiles([]);
+
       setMessages([
         { sender: 'ai', text: result.answer }
       ]);
     } catch (err) {
-      setError(err.message || 'Failed to load PDF. Please try again.');
+      setError(err.message || 'Failed to load PDFs. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
   const handleReset = () => {
-    setFile(null);
-    setFileName('');
+    setFiles([]);
+    setActiveFileNames([]);
     setThreadId('');
     setMessages([]);
     setError(null);
@@ -130,8 +218,8 @@ export default function PdfChat() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!input.trim()) return;
-    if (!threadId && !file) {
-      setError('Please upload a PDF file to start chatting.');
+    if (!threadId && files.length === 0) {
+      setError('Please upload at least one PDF file to start chatting.');
       return;
     }
 
@@ -147,7 +235,7 @@ export default function PdfChat() {
     try {
       // Call stateful API
       const result = await chatWithPdf({
-        file: threadId ? null : file, // Send file only on the first turn
+        files: threadId ? null : files, // Send files only on the first turn if not loaded
         question: userQuestion,
         threadId: threadId || null
       });
@@ -155,6 +243,10 @@ export default function PdfChat() {
       // Update state with result
       if (!threadId && result.thread_id) {
         setThreadId(result.thread_id);
+      }
+      if (!threadId && files.length > 0) {
+        setActiveFileNames(result.filenames || files.map((f) => f.name));
+        setFiles([]);
       }
 
       setMessages((prev) => [...prev, { sender: 'ai', text: result.answer }]);
@@ -177,7 +269,12 @@ export default function PdfChat() {
         </div>
 
         <div className="upload-section">
-          <h3 className="upload-title">Document</h3>
+          <div className="upload-header-row">
+            <h3 className="upload-title">Documents</h3>
+            {files.length > 0 && !threadId && (
+              <span className="file-count-tag">{files.length} selected</span>
+            )}
+          </div>
 
           {!threadId ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', width: '100%' }}>
@@ -194,39 +291,64 @@ export default function PdfChat() {
                   type="file"
                   className="file-input"
                   accept=".pdf"
+                  multiple
                   onChange={handleFileChange}
                 />
                 <svg className="dropzone-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="24" height="24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                 </svg>
-                {fileName ? (
-                  <span className="dropzone-text file-name">{fileName}</span>
-                ) : (
-                  <>
-                    <span className="dropzone-text">Click or drag PDF here</span>
-                    <span className="dropzone-subtext">Supports PDF up to 25MB</span>
-                  </>
-                )}
+                <span className="dropzone-text">Click or drag PDF(s) here</span>
+                <span className="dropzone-subtext">Upload multiple PDFs simultaneously</span>
               </div>
+
+              {/* Selected Files List */}
+              {files.length > 0 && (
+                <div className="file-selection-list">
+                  {files.map((f, idx) => (
+                    <div key={idx} className="file-chip">
+                      <svg className="file-details-icon" fill="currentColor" viewBox="0 0 20 20" width="14" height="14">
+                        <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
+                      </svg>
+                      <span className="file-chip-name" title={f.name}>{f.name}</span>
+                      <button 
+                        className="file-chip-remove" 
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRemoveFile(idx);
+                        }}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
               
-              {file && (
+              {files.length > 0 && (
                 <button 
                   className="load-pdf-button"
                   onClick={handleLoadPdf}
                   disabled={loading}
                 >
-                  {loading ? 'Ingesting PDF...' : 'Load PDF'}
+                  {loading ? `Ingesting ${files.length} PDF${files.length > 1 ? 's' : ''}...` : `Load ${files.length} PDF${files.length > 1 ? 's' : ''}`}
                 </button>
               )}
             </div>
           ) : (
             <div className="session-info">
-              <span className="session-header">Active Session</span>
-              <div className="file-details">
-                <svg className="file-details-icon" fill="currentColor" viewBox="0 0 20 20" width="18" height="18">
-                  <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
-                </svg>
-                <span className="file-name" title={fileName}>{fileName}</span>
+              <span className="session-header">
+                Active Documents ({activeFileNames.length})
+              </span>
+              <div className="active-files-list">
+                {activeFileNames.map((name, idx) => (
+                  <div key={idx} className="file-details">
+                    <svg className="file-details-icon" fill="currentColor" viewBox="0 0 20 20" width="16" height="16">
+                      <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
+                    </svg>
+                    <span className="file-name" title={name}>{name}</span>
+                  </div>
+                ))}
               </div>
               <span className="session-header">Thread ID</span>
               <span className="thread-badge" title={threadId}>{threadId}</span>
@@ -274,7 +396,7 @@ export default function PdfChat() {
                   {msg.sender === 'user' ? 'U' : 'AI'}
                 </div>
                 <div className="message-content">
-                  {msg.text}
+                  <RenderMessageContent content={msg.text} isAi={msg.sender === 'ai'} />
                 </div>
               </div>
             ))
@@ -309,13 +431,13 @@ export default function PdfChat() {
               className="chat-input"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder={!threadId && !file ? "Please upload a PDF to begin..." : "Type your question..."}
+              placeholder={!threadId && files.length === 0 ? "Please upload PDF(s) to begin..." : "Type your question..."}
               disabled={loading}
             />
             <button 
               type="submit" 
               className="send-button"
-              disabled={loading || !input.trim() || (!threadId && !file)}
+              disabled={loading || !input.trim() || (!threadId && files.length === 0)}
             >
               <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />

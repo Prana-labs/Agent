@@ -25,7 +25,7 @@ prompt = PromptTemplate.from_template(
     """
 )
 
-model = ChatOpenAI()
+model = ChatOpenAI(model="gpt-4o-mini", temperature=0.2)
 
 #model = OpenAI(
 #  base_url = "https://integrate.api.nvidia.com/v1",

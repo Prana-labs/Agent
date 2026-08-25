@@ -11,13 +11,20 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000
  * @param {string} [params.threadId] - The existing thread ID.
  * @returns {Promise<{thread_id: string, question: string, answer: string}>}
  */
-export async function chatWithPdf({ file, question, threadId }) {
+export async function chatWithPdf({ file, files, question, threadId }) {
   const formData = new FormData();
-  formData.append('question', question);
-  
-  if (file) {
-    formData.append('file', file);
+  if (question !== undefined && question !== null) {
+    formData.append('question', question);
   }
+  
+  if (files && files.length > 0) {
+    files.forEach((f) => {
+      formData.append('files', f);
+    });
+  } else if (file) {
+    formData.append('files', file);
+  }
+
   if (threadId) {
     formData.append('thread_id', threadId);
   }

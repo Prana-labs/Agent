@@ -1,122 +1,90 @@
-
 import uuid
+from typing import Dict, Any, Union
 
 from langgraph.graph import StateGraph, MessagesState, START
 from langgraph.checkpoint.memory import InMemorySaver
-
-from langchain_core.messages import SystemMessage, HumanMessage
+from langchain_core.messages import HumanMessage, AIMessage
 from langchain_core.runnables import RunnableConfig
 
-from rag import RAGPipeline
-from LLMs import model
+from rag import DocumentCollection
+from agent import run_agent
 
-sessions = {}
+sessions: Dict[str, Dict[str, Any]] = {}
 checkpointer = InMemorySaver()
 
-def rag_node(
+
+# =========================================================
+# AGENT LANGGRAPH NODE
+# =========================================================
+
+def agent_node(
     state: MessagesState,
     config: RunnableConfig
 ):
     """
-    Main LangGraph node.
-
-    1. Gets the current question
-    2. Runs hybrid retrieval (dense + sparse + RRF)
-    3. Combines PDF context + conversation history
-    4. Sends everything to the LLM
-    5. Returns the AI response
+    Main LangGraph node executing the Agent:
+    1. Senses query intent (no_rag, standard_rag, hybrid_rag).
+    2. Runs balanced retrieval if RAG is required (single-PDF or multi-PDF).
+    3. Generates conversational or structured learning output.
     """
     thread_id = config["configurable"]["thread_id"]
 
     if thread_id not in sessions:
         raise ValueError(
-            "No PDF session found for this thread_id"
+            "No PDF session found for this thread_id. Please upload a PDF first."
         )
 
     session = sessions[thread_id]
-    pipeline: RAGPipeline = session["pipeline"]
+    pipeline: DocumentCollection = session["pipeline"]
 
     question = state["messages"][-1].content
-    context = pipeline.get_context(question)
+    history = state["messages"]
 
-    system_message = SystemMessage(
-        content=f"""
-You are a helpful PDF question-answering assistant.
-
-Answer the user's question using the provided
-document context and the previous conversation.
-
-Rules:
-
-1. Use the document context as the primary source.
-2. Use conversation history to understand follow-up
-   questions and references.
-3. Do not invent information that is not supported
-   by the document.
-4. If the answer cannot be found in the document,
-   clearly say that you could not find it.
-
-DOCUMENT CONTEXT:
-
-{context}
-"""
+    # Run the intelligent Agent controller
+    answer = run_agent(
+        question=question,
+        history=history,
+        doc_collection=pipeline
     )
 
-    # Conversation history
-
-    messages = [
-        system_message
-    ] + state["messages"]
-
-    # Call LLM
-
-    response = model.invoke(messages)
-
-    # Return new AI message
     return {
-        "messages": [response]
+        "messages": [AIMessage(content=answer)]
     }
 
 
+# =========================================================
 # BUILD LANGGRAPH
+# =========================================================
 
 builder = StateGraph(MessagesState)
 
 builder.add_node(
-    "rag",
-    rag_node
+    "agent",
+    agent_node
 )
 
 builder.add_edge(
     START,
-    "rag"
+    "agent"
 )
 
-
-# =========================================================
 # COMPILE GRAPH
-# =========================================================
-
 graph = builder.compile(
     checkpointer=checkpointer
 )
 
 
 # =========================================================
-# CREATE SESSION
+# SESSION MANAGEMENT
 # =========================================================
 
 def create_session(
-    pipeline: RAGPipeline,
-    filename
-):
+    pipeline: DocumentCollection,
+    filename: str
+) -> str:
     """
-    Creates a new conversation session.
-
-    Returns:
-        thread_id
+    Creates a new conversation session with a unique thread_id.
     """
-
     thread_id = str(uuid.uuid4())
 
     sessions[thread_id] = {
@@ -127,43 +95,24 @@ def create_session(
     return thread_id
 
 
-# =========================================================
-# CHAT
-# =========================================================
-
 def chat(
     thread_id: str,
     question: str
-):
+) -> str:
     """
-    Sends a question to the LangGraph conversation.
-
-    LangGraph automatically maintains the conversation
-    history for this thread_id.
+    Sends a question to the LangGraph agent conversation.
+    LangGraph maintains stateful conversation history for the thread_id.
     """
-
-    # -----------------------------------------------------
-    # Validate session
-    # -----------------------------------------------------
-
     if thread_id not in sessions:
         raise ValueError(
-            "Invalid thread_id. Upload a PDF first."
+            "Invalid thread_id. Please upload a PDF first."
         )
-
-    # -----------------------------------------------------
-    # LangGraph configuration
-    # -----------------------------------------------------
 
     config = {
         "configurable": {
             "thread_id": thread_id
         }
     }
-
-    # -----------------------------------------------------
-    # Invoke graph
-    # -----------------------------------------------------
 
     result = graph.invoke(
         {
@@ -176,28 +125,16 @@ def chat(
         config
     )
 
-    # -----------------------------------------------------
-    # Get latest AI response
-    # -----------------------------------------------------
-
     answer = result["messages"][-1].content
-
     return answer
 
-
-# =========================================================
-# GET CONVERSATION HISTORY
-# =========================================================
 
 def get_history(thread_id: str):
     """
     Returns the conversation history for a thread.
     """
-
     if thread_id not in sessions:
-        raise ValueError(
-            "Invalid thread_id."
-        )
+        raise ValueError("Invalid thread_id.")
 
     config = {
         "configurable": {
@@ -206,21 +143,12 @@ def get_history(thread_id: str):
     }
 
     state = graph.get_state(config)
+    return state.values.get("messages", [])
 
-    return state.values.get(
-        "messages",
-        []
-    )
-
-
-# =========================================================
-# DELETE SESSION
-# =========================================================
 
 def delete_session(thread_id: str):
     """
     Removes the PDF session from memory.
     """
-
     if thread_id in sessions:
         del sessions[thread_id]

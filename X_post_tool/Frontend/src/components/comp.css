@@ -69,19 +69,87 @@
   gap: 1.25rem;
 }
 
+.upload-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.25rem;
+}
+
 .upload-title {
   font-size: 0.875rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: #a78bfa;
-  margin-bottom: 0.25rem;
+}
+
+.file-count-tag {
+  font-size: 0.75rem;
+  background: rgba(167, 139, 250, 0.15);
+  border: 1px solid rgba(167, 139, 250, 0.3);
+  color: #c084fc;
+  padding: 0.15rem 0.5rem;
+  border-radius: 9999px;
+  font-weight: 600;
+}
+
+.file-selection-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  max-height: 180px;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+
+.file-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 0.4rem 0.6rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  color: #e5e7eb;
+}
+
+.file-chip-name {
+  flex-grow: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.file-chip-remove {
+  background: none;
+  border: none;
+  color: #9ca3af;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 0.2rem;
+  transition: color 0.15s;
+}
+
+.file-chip-remove:hover {
+  color: #ef4444;
+}
+
+.active-files-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  max-height: 200px;
+  overflow-y: auto;
+  padding-right: 0.25rem;
 }
 
 .dropzone {
   border: 2px dashed rgba(167, 139, 250, 0.35);
   border-radius: 12px;
-  padding: 2rem 1rem;
+  padding: 1.5rem 1rem;
   text-align: center;
   background: rgba(255, 255, 255, 0.015);
   cursor: pointer;
@@ -90,7 +158,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.75rem;
+  gap: 0.6rem;
 }
 
 .dropzone:hover, .dropzone.active {
@@ -140,8 +208,11 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 0.875rem;
+  font-size: 0.85rem;
   color: #e5e7eb;
+  background: rgba(255, 255, 255, 0.02);
+  padding: 0.35rem 0.5rem;
+  border-radius: 6px;
 }
 
 .file-details-icon {
@@ -348,9 +419,9 @@
 }
 
 .message-content {
-  padding: 0.875rem 1.125rem;
+  padding: 1rem 1.25rem;
   border-radius: 14px;
-  line-height: 1.5;
+  line-height: 1.6;
   font-size: 0.9375rem;
   word-break: break-word;
 }
@@ -368,6 +439,88 @@
   color: #f3f4f6;
   border-top-left-radius: 2px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
+  width: 100%;
+}
+
+/* Markdown & Learning Points Styling */
+.formatted-markdown {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.formatted-markdown .chat-h1 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #ffffff;
+  background: linear-gradient(to right, #ffffff, #c084fc);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin: 0.25rem 0 0.5rem 0;
+  line-height: 1.3;
+}
+
+.formatted-markdown .chat-h2 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #c084fc;
+  margin: 0.75rem 0 0.35rem 0;
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid rgba(192, 132, 252, 0.2);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.formatted-markdown .chat-h3 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #a78bfa;
+  margin: 0.5rem 0 0.2rem 0;
+}
+
+.formatted-markdown .chat-p {
+  margin: 0;
+  color: #e5e7eb;
+  line-height: 1.6;
+}
+
+.formatted-markdown .chat-bullet-list {
+  margin: 0.25rem 0 0.6rem 0;
+  padding-left: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.formatted-markdown .chat-bullet-list li {
+  color: #e5e7eb;
+  line-height: 1.5;
+}
+
+.formatted-markdown .chat-bullet-list li::marker {
+  color: #a78bfa;
+}
+
+.formatted-markdown .chat-quote {
+  margin: 0.5rem 0;
+  padding: 0.5rem 0.85rem;
+  background: rgba(167, 139, 250, 0.08);
+  border-left: 3px solid #a78bfa;
+  border-radius: 0 8px 8px 0;
+  color: #ddd6fe;
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.highlight-text {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.user-message-text {
+  line-height: 1.5;
+  white-space: pre-wrap;
 }
 
 /* Typing Indicator */

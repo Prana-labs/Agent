@@ -25,45 +25,66 @@ app.add_middleware(
 
 load_dotenv()
 
+from typing import List, Optional
+
 @app.post("/chat")
 async def chat_endpoint(
     question: str = Form(None),
     thread_id: str = Form(None),
-    file: UploadFile = File(None),
+    files: Optional[List[UploadFile]] = File(None),
+    file: Optional[UploadFile] = File(None),
 ):
+    upload_files = []
+    if files:
+        upload_files.extend(files)
     if file:
-        with tempfile.NamedTemporaryFile(
-            delete=False,
-            suffix=".pdf"
-        ) as temp:
-            temp.write(await file.read())
-            pdf_path = temp.name
+        upload_files.append(file)
 
+    if upload_files:
+        temp_paths = []
+        filenames = []
         try:
-            pipeline = setup_pipeline(pdf_path)
-            filename = file.filename or "document"
+            for uf in upload_files:
+                with tempfile.NamedTemporaryFile(
+                    delete=False,
+                    suffix=".pdf"
+                ) as temp:
+                    temp.write(await uf.read())
+                    temp_paths.append(temp.name)
+                filenames.append(uf.filename or "document.pdf")
+
+            file_tuples = list(zip(temp_paths, filenames))
+            pipeline = setup_pipeline(file_tuples)
+            filename_str = ", ".join(filenames)
 
             if thread_id:
                 sessions[thread_id] = {
                     "pipeline": pipeline,
-                    "filename": filename,
+                    "filename": filename_str,
+                    "filenames": filenames,
                 }
                 tid = thread_id
             else:
-                tid = create_session(pipeline, filename)
+                tid = create_session(pipeline, filename_str)
+                if tid in sessions:
+                    sessions[tid]["filenames"] = filenames
 
+            count = len(filenames)
+            doc_label = "document" if count == 1 else f"{count} documents"
             return {
                 "thread_id": tid,
                 "question": None,
-                "answer": f"I have successfully loaded and indexed '{filename}'. Ask me anything about its contents!",
+                "answer": f"I have successfully loaded and indexed {doc_label} ({filename_str}). Ask me anything across your documents!",
+                "filenames": filenames,
             }
         finally:
-            if os.path.exists(pdf_path):
-                os.remove(pdf_path)
+            for p in temp_paths:
+                if os.path.exists(p):
+                    os.remove(p)
     elif not thread_id:
         raise HTTPException(
             status_code=400,
-            detail="Either thread_id or file must be provided to start a chat session."
+            detail="Either thread_id or PDF file(s) must be provided to start a chat session."
         )
 
     if not question:
