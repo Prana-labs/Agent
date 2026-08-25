@@ -81,8 +81,8 @@ Combines multiple retrieval strategies to improve document search:
 
 ```mermaid
 graph LR
-    UserQuery --> Dense[Dense Retrieval]
-    UserQuery --> Sparse[Sparse Retrieval]
+    UserDoc&Query --> Dense[Dense Retrieval]
+    UserDoc&Query --> Sparse[Sparse Retrieval]
     Dense --> FAISS[FAISS]
     Sparse --> BM25[BM25]
     FAISS & BM25 --> RRF[Reciprocal Rank Fusion]
