@@ -10,17 +10,20 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:
     raise ValueError("DATABASE_URL environment variable is not set.")
 
-# Ensure the URL uses the asyncpg driver
-# Railway/Neon often give postgres:// or postgresql:// — we fix it automatically
-if DATABASE_URL.startswith("postgresql://"):
-    DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://", 1)
-elif DATABASE_URL.startswith("postgres://"):
-    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+asyncpg://", 1)
+import urllib.parse
 
-# Fix asyncpg ssl parameter incompatibility:
-# Standard postgres connection strings use ?sslmode=require, but asyncpg requires ?ssl=require
-if "sslmode=" in DATABASE_URL:
-    DATABASE_URL = DATABASE_URL.replace("sslmode=", "ssl=")
+# Ensure the URL uses the asyncpg driver and clean libpq-specific parameters
+parsed = urllib.parse.urlparse(DATABASE_URL)
+has_ssl = "ssl" in parsed.query or "sslmode" in parsed.query
+
+DATABASE_URL = urllib.parse.urlunparse((
+    "postgresql+asyncpg",
+    parsed.netloc,
+    parsed.path,
+    "",
+    "ssl=require" if has_ssl else "",
+    ""
+))
 
 engine = create_async_engine(
     DATABASE_URL,
