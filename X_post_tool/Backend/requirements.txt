@@ -3,6 +3,7 @@ fastapi>=0.115.12
 uvicorn>=0.34.0
 python-multipart>=0.0.32
 python-dotenv>=1.2.2
+groq
 
 # LangChain Framework
 langchain>=0.3.0
@@ -26,3 +27,9 @@ tiktoken>=0.7.0
 
 # Observability & Tracing
 langsmith>=0.1.0
+
+# Database — PostgreSQL
+sqlalchemy>=2.0.0
+asyncpg>=0.29.0
+psycopg2-binary>=2.9.0
+alembic>=1.13.0

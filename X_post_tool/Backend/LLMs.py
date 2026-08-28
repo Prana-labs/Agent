@@ -1,7 +1,7 @@
-from langchain_openai import ChatOpenAI
+#from langchain_openai import ChatOpenAI
 from dotenv import load_dotenv
-from openai import OpenAI
-
+#from openai import OpenAI
+from groq import Groq
 
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
@@ -25,7 +25,13 @@ prompt = PromptTemplate.from_template(
     """
 )
 
-model = ChatOpenAI(model="gpt-4o-mini", temperature=0.2)
+#model = ChatOpenAI(model="gpt-4o-mini", temperature=0.2)
+
+model = ChatGroq(
+    model="llama-3.1-8b-instant",
+    temperature=0.2,
+    api_key=os.getenv("GROQ_API_KEY")
+)
 
 #model = OpenAI(
 #  base_url = "https://integrate.api.nvidia.com/v1",
