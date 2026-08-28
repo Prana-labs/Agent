@@ -17,6 +17,11 @@ if DATABASE_URL.startswith("postgresql://"):
 elif DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+asyncpg://", 1)
 
+# Fix asyncpg ssl parameter incompatibility:
+# Standard postgres connection strings use ?sslmode=require, but asyncpg requires ?ssl=require
+if "sslmode=" in DATABASE_URL:
+    DATABASE_URL = DATABASE_URL.replace("sslmode=", "ssl=")
+
 engine = create_async_engine(
     DATABASE_URL,
     pool_size=5,
