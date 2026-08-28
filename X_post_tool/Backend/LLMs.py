@@ -2,6 +2,7 @@
 from dotenv import load_dotenv
 #from openai import OpenAI
 from groq import Groq
+from langchain_groq import ChatGroq
 
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
